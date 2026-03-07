@@ -53,8 +53,13 @@ func (c *Client) GetInboxTasks() ([]Task, error) {
 		}
 	}
 
+	// Fallback: use first project if no inbox found
+	if inboxID == "" && len(projects) > 0 {
+		inboxID = projects[0].ID
+	}
+
 	if inboxID == "" {
-		return nil, fmt.Errorf("inbox project not found")
+		return nil, fmt.Errorf("no projects found")
 	}
 
 	// Get tasks from inbox
@@ -63,10 +68,20 @@ func (c *Client) GetInboxTasks() ([]Task, error) {
 		return nil, err
 	}
 
+	// Try to unmarshal as array first
 	var tasks []Task
 	if err := json.Unmarshal(data, &tasks); err != nil {
-		return nil, err
+		// Try as object with tasks field
+		var resp struct {
+			Tasks []Task `json:"tasks"`
+		}
+		if err2 := json.Unmarshal(data, &resp); err2 == nil {
+			return resp.Tasks, nil
+		}
+		return nil, fmt.Errorf("failed to parse tasks: %v", err)
 	}
+
+	return tasks, nil
 
 	return tasks, nil
 }
@@ -78,9 +93,17 @@ func (c *Client) GetProjectTasks(projectID string) ([]Task, error) {
 		return nil, err
 	}
 
+	// Try to unmarshal as array first
 	var tasks []Task
 	if err := json.Unmarshal(data, &tasks); err != nil {
-		return nil, err
+		// Try as object with tasks field
+		var resp struct {
+			Tasks []Task `json:"tasks"`
+		}
+		if err2 := json.Unmarshal(data, &resp); err2 == nil {
+			return resp.Tasks, nil
+		}
+		return nil, fmt.Errorf("failed to parse tasks: %v (data: %s)", err, string(data[:min(200, len(data))]))
 	}
 
 	return tasks, nil
@@ -194,6 +217,11 @@ func (c *Client) GetInboxProjectID() (string, error) {
 		if p.Inbox {
 			return p.ID, nil
 		}
+	}
+
+	// Fallback: return first project if no inbox found
+	if len(projects) > 0 {
+		return projects[0].ID, nil
 	}
 
 	return "", fmt.Errorf("inbox project not found")

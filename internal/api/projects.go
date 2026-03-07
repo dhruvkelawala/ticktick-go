@@ -4,18 +4,18 @@ import "encoding/json"
 
 // Project represents a TickTick project
 type Project struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	Color         string `json:"color,omitempty"`
-	Archived      bool   `json:"archived,omitempty"`
-	ParentID      string `json:"parentId,omitempty"`
-	Kind          int    `json:"kind,omitempty"` // 0=Personal, 1=Business
-	Share         bool   `json:"share,omitempty"`
-	OwnerID       string `json:"ownerId,omitempty"`
-	GroupID       string `json:"groupId,omitempty"`
-	Inbox         bool   `json:"inbox,omitempty"` // True if this is the inbox project
-	SortOrder     int    `json:"sortOrder,omitempty"`
-	TaskCount     int    `json:"taskCount,omitempty"` // Not from API, computed
+	ID            string      `json:"id"`
+	Name          string      `json:"name"`
+	Color         string      `json:"color,omitempty"`
+	Archived      bool        `json:"archived,omitempty"`
+	ParentID      string      `json:"parentId,omitempty"`
+	Kind          interface{} `json:"kind,omitempty"` // 0=Personal, 1=Business (can be string or int)
+	Share         bool        `json:"share,omitempty"`
+	OwnerID       string      `json:"ownerId,omitempty"`
+	GroupID       string      `json:"groupId,omitempty"`
+	Inbox         bool        `json:"inbox,omitempty"` // True if this is the inbox project
+	SortOrder     int         `json:"sortOrder,omitempty"`
+	TaskCount     int         `json:"taskCount,omitempty"` // Not from API, computed
 }
 
 // GetProjects returns all projects

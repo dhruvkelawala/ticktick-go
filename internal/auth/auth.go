@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"tt/internal/config"
@@ -145,11 +146,20 @@ func OAuthLogin(cfg *config.Config) error {
 	fmt.Println(authURL)
 	fmt.Println()
 	fmt.Println("After authorizing, you will be redirected to a localhost page.")
-	fmt.Println("Copy the authorization code from the URL (parameter 'code') and enter it below.")
+	fmt.Println("Paste the full redirect URL (or just the code) below.")
 	fmt.Print("\nAuthorization code: ")
 
-	var code string
-	fmt.Scanln(&code)
+	var input string
+	fmt.Scanln(&input)
+
+	// Extract code from full URL if user pasted redirect URL
+	code := input
+	if strings.Contains(input, "code=") {
+		u, err := url.Parse(input)
+		if err == nil {
+			code = u.Query().Get("code")
+		}
+	}
 
 	if code == "" {
 		return fmt.Errorf("authorization code is required")
