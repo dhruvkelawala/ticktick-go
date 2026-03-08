@@ -2,14 +2,15 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"tt/internal/config"
@@ -85,6 +86,10 @@ func RefreshToken(cfg *config.Config) (*Token, error) {
 		return nil, fmt.Errorf("no token to refresh: %w", err)
 	}
 
+	if current.RefreshToken == "" {
+		return nil, fmt.Errorf("no refresh token available. Please run 'tt auth login'")
+	}
+
 	data := url.Values{}
 	data.Set("grant_type", "refresh_token")
 	data.Set("refresh_token", current.RefreshToken)
@@ -132,39 +137,75 @@ func RefreshToken(cfg *config.Config) (*Token, error) {
 	return &tokenResp, nil
 }
 
-// OAuthLogin performs the OAuth2 authorization code flow
+// OAuthLogin performs the OAuth2 authorization code flow with callback server
 func OAuthLogin(cfg *config.Config) error {
+	// Create channels
+	codeChan := make(chan string, 1)
+	errChan := make(chan error, 1)
+
+	// Start callback server
+	mux := http.NewServeMux()
+	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+		code := r.URL.Query().Get("code")
+		if code != "" {
+			codeChan <- code
+			w.Write([]byte(`<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:40px;text-align:center;background:#1a1a2e;color:#eee}h1{color:#4ade80}code{background:#333;padding:8px 16px;border-radius:4px;display:inline-block;margin:20px 0;font-size:14px}</style></head><body><h1>✓ Authentication Successful!</h1><p>You can close this window and return to the terminal.</p><p>Code received: <code>` + code + `</code></p></body></html>`))
+		} else {
+			errChan <- fmt.Errorf("no code received in callback")
+			w.Write([]byte(`<html><head><style>body{font-family:sans-serif;padding:40px;text-align:center;background:#1a1a2e;color:#eee}h1{color:#f87171}</style></head><body><h1>✗ Authentication Failed</h1></body></html>`))
+		}
+	})
+
+	server := &http.Server{Addr: "localhost:18900", Handler: mux}
+	
+	// Start server in goroutine
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			errChan <- err
+		}
+	}()
+
+	// Give server time to start
+	time.Sleep(200 * time.Millisecond)
+
 	// Build authorization URL
-	authURL := fmt.Sprintf(
+	loginURL := fmt.Sprintf(
 		"%s?client_id=%s&scope=tasks:read%%20tasks:write&response_type=code&redirect_uri=%s",
 		authURL,
 		cfg.ClientID,
 		url.QueryEscape(callbackURL),
 	)
 
-	fmt.Println("Please open this URL in your browser:")
-	fmt.Println(authURL)
+	fmt.Println("Opening browser for authentication...")
+	fmt.Println("If browser doesn't open, visit this URL manually:")
+	fmt.Println(loginURL)
 	fmt.Println()
-	fmt.Println("After authorizing, you will be redirected to a localhost page.")
-	fmt.Println("Paste the full redirect URL (or just the code) below.")
-	fmt.Print("\nAuthorization code: ")
+	fmt.Println("Waiting for callback from TickTick...")
 
-	var input string
-	fmt.Scanln(&input)
+	// Try to open browser
+	_ = openBrowser(loginURL)
 
-	// Extract code from full URL if user pasted redirect URL
-	code := input
-	if strings.Contains(input, "code=") {
-		u, err := url.Parse(input)
-		if err == nil {
-			code = u.Query().Get("code")
-		}
+	// Wait for code from callback
+	select {
+	case code := <-codeChan:
+		fmt.Println("\n✓ Received authorization code!")
+		server.Shutdown(context.Background())
+		return exchangeCodeForToken(code, cfg)
+	case err := <-errChan:
+		server.Shutdown(context.Background())
+		return err
+	case <-time.After(120 * time.Second):
+		server.Shutdown(context.Background())
+		return fmt.Errorf("authentication timed out - please try again")
 	}
+}
 
-	if code == "" {
-		return fmt.Errorf("authorization code is required")
-	}
+func openBrowser(url string) error {
+	cmd := exec.Command("open", url)
+	return cmd.Start()
+}
 
+func exchangeCodeForToken(code string, cfg *config.Config) error {
 	// Exchange code for token
 	data := url.Values{}
 	data.Set("grant_type", "authorization_code")
@@ -206,23 +247,30 @@ func OAuthLogin(cfg *config.Config) error {
 		return err
 	}
 
-	fmt.Println("\n✓ Authentication successful! Token saved.")
+	fmt.Println("✓ Authentication successful! Token saved.")
 	return nil
 }
 
-// GetValidToken returns a valid token, refreshing if necessary
+// GetValidToken returns a valid token, trying to use existing token first
 func GetValidToken(cfg *config.Config) (*Token, error) {
 	token, err := LoadToken()
 	if err != nil {
 		return nil, fmt.Errorf("not authenticated. Run 'tt auth login' first")
 	}
 
-	if token.IsExpired() {
+	// If token is expired and we have a refresh token, try to refresh
+	if token.IsExpired() && token.RefreshToken != "" {
 		token, err = RefreshToken(cfg)
 		if err != nil {
+			// If refresh fails but we have an access token, try using it anyway
+			// (the expiry might be wrong but the token still works)
+			if token.AccessToken != "" {
+				return token, nil
+			}
 			return nil, fmt.Errorf("token refresh failed: %w", err)
 		}
 	}
 
+	// If not expired, or no refresh token but we have access token, return what we have
 	return token, nil
 }

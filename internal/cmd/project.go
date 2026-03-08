@@ -10,7 +10,6 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(projectCmd)
 	projectCmd.AddCommand(projectListCmd, projectGetCmd)
 	
 	projectListCmd.Flags().BoolVarP(&jsonFlag, "json", "j", false, "Output in JSON format")

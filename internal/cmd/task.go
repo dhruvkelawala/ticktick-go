@@ -11,7 +11,6 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(taskCmd)
 	taskCmd.AddCommand(taskListCmd, taskAddCmd, taskGetCmd, taskDoneCmd, taskDeleteCmd, taskEditCmd)
 	
 	// Add global json flag to task commands

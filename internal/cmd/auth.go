@@ -10,7 +10,6 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(authCmd)
 	authCmd.AddCommand(authLoginCmd, authStatusCmd, authLogoutCmd)
 }
 

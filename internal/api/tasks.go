@@ -275,8 +275,16 @@ func ParseDueDate(due string, timezone string) (string, error) {
 		return "", err
 	}
 
-	// Return ISO format
-	return parsed.Format("2006-01-02T15:04:05.000"), nil
+	// Return ISO format with timezone offset (like +0000)
+	_, offset := parsed.Zone()
+	offsetHours := offset / 3600
+	offsetMins := (offset % 3600) / 60
+	offsetStr := fmt.Sprintf("%+03d%02d", offsetHours, offsetMins)
+	// Handle case where offset is 0 (UTC) - should be +0000 not +00
+	if offset == 0 {
+		offsetStr = "+0000"
+	}
+	return parsed.Format("2006-01-02T15:04:05") + offsetStr, nil
 }
 
 // ToLocalTime converts TickTick time to local time
@@ -286,6 +294,8 @@ func ToLocalTime(t string) time.Time {
 	}
 	// Try parsing the TickTick format
 	formats := []string{
+		"2006-01-02T15:04:05.000+0000",
+		"2006-01-02T15:04:05+0000",
 		"2006-01-02T15:04:05.000",
 		"2006-01-02T15:04:05",
 		"2006-01-02",
