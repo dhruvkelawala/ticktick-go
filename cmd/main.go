@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"tt/internal/cmd"
+	"ticktick-go/internal/cmd"
 )
 
 func main() {

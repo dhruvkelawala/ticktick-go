@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"tt/internal/api"
-	"tt/internal/config"
-	"tt/internal/format"
+	"ticktick-go/internal/api"
+	"ticktick-go/internal/config"
+	"ticktick-go/internal/format"
 )
 
 func init() {

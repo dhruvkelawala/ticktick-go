@@ -31,7 +31,7 @@ Add tasks, manage projects, and check off your day without leaving the terminal.
 ```bash
 git clone https://github.com/dhruvkelawala/tt
 cd tt
-make install   # builds and copies to ~/.local/bin/tt
+make install   # builds and copies to ~/.local/bin/ttg
 ```
 
 Make sure `~/.local/bin` is on your `$PATH`:
@@ -46,7 +46,7 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
 
 1. Register an app at [developer.ticktick.com](https://developer.ticktick.com/manage) to get your **Client ID** and **Client Secret**.
 
-2. Create `~/.config/tt/config.json`:
+2. Create `~/.config/ttg/config.json`:
 
 ```json
 {
@@ -62,7 +62,7 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
 tt auth login
 ```
 
-This opens a browser for OAuth2 and stores your token at `~/.config/tt/token.json`.
+This opens a browser for OAuth2 and stores your token at `~/.config/ttg/token.json`.
 
 ---
 

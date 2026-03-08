@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"tt/internal/auth"
-	"tt/internal/config"
+	"ticktick-go/internal/auth"
+	"ticktick-go/internal/config"
 )
 
 func init() {

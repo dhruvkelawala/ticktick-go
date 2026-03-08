@@ -1,4 +1,4 @@
-module tt
+module ticktick-go
 
 go 1.25.0
 

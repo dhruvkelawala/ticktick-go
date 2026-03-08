@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"tt/internal/config"
+	"ticktick-go/internal/config"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "tt",
+	Use:   "ttg",
 	Short: "TickTick CLI - Manage your tasks from the terminal",
 	Long:  `A CLI tool for managing TickTick tasks with OAuth2 authentication.`,
 }

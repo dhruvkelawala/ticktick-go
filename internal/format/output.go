@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"tt/internal/api"
+	"ticktick-go/internal/api"
 )
 
 // OutputJSON outputs data as JSON

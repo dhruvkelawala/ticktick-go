@@ -1,6 +1,6 @@
 .PHONY: build install clean test
 
-BINARY_NAME=tt
+BINARY_NAME=ttg
 INSTALL_PATH=$(HOME)/.local/bin/$(BINARY_NAME)
 GO=go
 GOFLAGS=-v

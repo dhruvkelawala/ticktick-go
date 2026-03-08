@@ -20,7 +20,7 @@ var defaultConfig = Config{
 
 func ConfigPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "tt", "config.json")
+	return filepath.Join(home, ".config", "ttg", "config.json")
 }
 
 func Load() *Config {
@@ -44,6 +44,6 @@ func Load() *Config {
 
 func EnsureConfigDir() error {
 	home, _ := os.UserHomeDir()
-	dir := filepath.Join(home, ".config", "tt")
+	dir := filepath.Join(home, ".config", "ttg")
 	return os.MkdirAll(dir, 0755)
 }

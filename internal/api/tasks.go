@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"tt/internal/config"
-	"tt/internal/dateparse"
+	"ticktick-go/internal/config"
+	"ticktick-go/internal/dateparse"
 )
 
 type Task struct {

@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"tt/internal/config"
+	"ticktick-go/internal/config"
 )
 
 type Token struct {
@@ -32,7 +32,7 @@ const (
 
 func TokenPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "tt", "token.json")
+	return filepath.Join(home, ".config", "ttg", "token.json")
 }
 
 func LoadToken() (*Token, error) {
@@ -51,7 +51,7 @@ func LoadToken() (*Token, error) {
 
 func SaveToken(token *Token) error {
 	home, _ := os.UserHomeDir()
-	dir := filepath.Join(home, ".config", "tt")
+	dir := filepath.Join(home, ".config", "ttg")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
