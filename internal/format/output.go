@@ -30,11 +30,11 @@ func OutputTaskList(tasks []api.Task, client *api.Client) error {
 		projectName := client.GetProjectName(t.ProjectID)
 		dueStr := api.FormatDueDate(t.DueDate)
 
-		// Format priority
+		// Format priority (TickTick: 5=high, 3=medium, 1=low)
 		priorityStr := "[ - ]"
-		if t.Priority == 3 {
+		if t.Priority == 5 {
 			priorityStr = "[HIGH]"
-		} else if t.Priority == 2 {
+		} else if t.Priority == 3 {
 			priorityStr = "[MED]"
 		} else if t.Priority == 1 {
 			priorityStr = "[LOW]"

@@ -190,22 +190,6 @@ func (c *Client) DeleteTask(projectID, taskID string) error {
 	return err
 }
 
-// GetProjectIDByName finds a project ID by name
-func (c *Client) GetProjectIDByName(name string) (string, error) {
-	projects, err := c.GetProjects()
-	if err != nil {
-		return "", err
-	}
-
-	for _, p := range projects {
-		if p.Name == name {
-			return p.ID, nil
-		}
-	}
-
-	return "", fmt.Errorf("project not found: %s", name)
-}
-
 // GetInboxProjectID returns the inbox project ID
 func (c *Client) GetInboxProjectID() (string, error) {
 	projects, err := c.GetProjects()
@@ -227,13 +211,13 @@ func (c *Client) GetInboxProjectID() (string, error) {
 	return "", fmt.Errorf("inbox project not found")
 }
 
-// ParsePriority converts string priority to int
+// ParsePriority converts string priority to int (TickTick API: 0=none, 1=low, 3=medium, 5=high)
 func ParsePriority(p string) int {
 	switch p {
 	case "high":
-		return 3
+		return 5
 	case "medium", "med":
-		return 2
+		return 3
 	case "low":
 		return 1
 	default:
@@ -244,9 +228,9 @@ func ParsePriority(p string) int {
 // PriorityToString converts int priority to string
 func PriorityToString(p int) string {
 	switch p {
-	case 3:
+	case 5:
 		return "High"
-	case 2:
+	case 3:
 		return "Medium"
 	case 1:
 		return "Low"
