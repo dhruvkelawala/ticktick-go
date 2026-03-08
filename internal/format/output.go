@@ -46,12 +46,19 @@ func OutputTaskList(tasks []api.Task, client *api.Client) error {
 			statusPrefix = "✓"
 		}
 
-		fmt.Printf("%s %s  %-30s → %-15s due: %s\n", 
+		// Format reminder indicator
+		reminderIndicator := ""
+		if len(t.Reminders) > 0 {
+			reminderIndicator = " 🔔"
+		}
+
+		fmt.Printf("%s %s  %-30s → %-15s due: %s%s\n", 
 			statusPrefix,
 			priorityStr, 
 			truncate(t.Title, 30), 
 			truncate(projectName, 15),
-			dueStr)
+			dueStr,
+			reminderIndicator)
 	}
 	fmt.Println()
 
@@ -80,6 +87,13 @@ func OutputTaskDetail(task *api.Task, projectID string, client *api.Client) erro
 		fmt.Println("│ Tags:     " + strings.Join(task.Tags, ", "))
 	} else {
 		fmt.Println("│ Tags:     none")
+	}
+	
+	if len(task.Reminders) > 0 {
+		fmt.Println("│ Reminders:")
+		for _, r := range task.Reminders {
+			fmt.Println("│   🔔 " + api.ReminderToHuman(r.Trigger))
+		}
 	}
 	
 	fmt.Println("│ Status:   " + status)

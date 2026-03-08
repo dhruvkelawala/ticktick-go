@@ -30,12 +30,14 @@ func init() {
 	taskAddCmd.Flags().StringP("due", "d", "", "Due date (natural language)")
 	taskAddCmd.Flags().String("tag", "", "Tags (comma-separated)")
 	taskAddCmd.Flags().StringP("note", "n", "", "Task notes")
+	taskAddCmd.Flags().StringP("remind", "r", "", "Reminders (comma-separated: 15m, 1h, 1d, on-time)")
 	
 	// Edit flags
 	taskEditCmd.Flags().String("title", "", "New title")
 	taskEditCmd.Flags().String("due", "", "New due date")
 	taskEditCmd.Flags().String("priority", "", "New priority")
 	taskEditCmd.Flags().String("tag", "", "New tags (comma-separated)")
+	taskEditCmd.Flags().StringP("remind", "r", "", "Reminders (comma-separated: 15m, 1h, 1d, on-time)")
 }
 
 var taskCmd = &cobra.Command{
@@ -108,6 +110,7 @@ var taskAddCmd = &cobra.Command{
 		dueStr, _ := cmd.Flags().GetString("due")
 		tagsStr, _ := cmd.Flags().GetString("tag")
 		note, _ := cmd.Flags().GetString("note")
+		remindStr, _ := cmd.Flags().GetString("remind")
 
 		// Get project ID
 		var projectID string
@@ -136,6 +139,12 @@ var taskAddCmd = &cobra.Command{
 			}
 		}
 
+		// Parse reminders
+		reminders, err := api.ParseReminders(remindStr)
+		if err != nil {
+			return fmt.Errorf("failed to parse reminders: %w", err)
+		}
+
 		task := &api.Task{
 			ProjectID: projectID,
 			Title:     title,
@@ -145,6 +154,7 @@ var taskAddCmd = &cobra.Command{
 			Tags:      tags,
 			IsAllDay:  dueStr != "" && !strings.ContainsAny(dueStr, "0123456789"),
 			Status:    0,
+			Reminders: reminders,
 		}
 
 		created, err := client.CreateTask(task)
@@ -159,6 +169,11 @@ var taskAddCmd = &cobra.Command{
 		fmt.Println("✓ Task created successfully!")
 		fmt.Printf("  ID: %s\n", created.ID)
 		fmt.Printf("  Title: %s\n", created.Title)
+		if len(created.Reminders) > 0 {
+			for _, r := range created.Reminders {
+				fmt.Printf("  🔔 Reminder: %s\n", api.ReminderToHuman(r.Trigger))
+			}
+		}
 		return nil
 	},
 }
@@ -288,6 +303,7 @@ var taskEditCmd = &cobra.Command{
 		dueStr, _ := cmd.Flags().GetString("due")
 		priorityStr, _ := cmd.Flags().GetString("priority")
 		tagsStr, _ := cmd.Flags().GetString("tag")
+		remindStr, _ := cmd.Flags().GetString("remind")
 
 		// Find the task
 		tasks, err := client.GetAllTasks()
@@ -327,6 +343,13 @@ var taskEditCmd = &cobra.Command{
 				tags[i] = strings.TrimSpace(tags[i])
 			}
 			task.Tags = tags
+		}
+		if remindStr != "" {
+			reminders, err := api.ParseReminders(remindStr)
+			if err != nil {
+				return fmt.Errorf("failed to parse reminders: %w", err)
+			}
+			task.Reminders = reminders
 		}
 
 		_, err = client.UpdateTask(task)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"ticktick-go/internal/config"
@@ -24,6 +25,11 @@ type Task struct {
 	CompletedTime  string     `json:"completedTime,omitempty"`
 	CreatedTime    string     `json:"createdTime,omitempty"`
 	ModifiedTime   string     `json:"modifiedTime,omitempty"`
+	Reminders      []Reminder `json:"reminders,omitempty"`
+}
+
+type Reminder struct {
+	Trigger string `json:"trigger"`
 }
 
 type TaskListResponse struct {
@@ -245,6 +251,188 @@ func StatusToString(s int) string {
 		return "Completed"
 	}
 	return "Active"
+}
+
+// ParseReminders parses comma-separated reminder strings into Reminder structs
+// Supported: on-time, 0, 5m, 15m, 30m, 1h, 2h, 1d, 2d, Nm, Nh, Nd
+func ParseReminders(s string) ([]Reminder, error) {
+	if s == "" {
+		return nil, nil
+	}
+
+	parts := strings.Split(s, ",")
+	var reminders []Reminder
+
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		trigger, err := parseReminderString(part)
+		if err != nil {
+			return nil, err
+		}
+		reminders = append(reminders, Reminder{Trigger: trigger})
+	}
+
+	return reminders, nil
+}
+
+// parseReminderString converts a single reminder string to TRIGGER format
+func parseReminderString(s string) (string, error) {
+	// Normalize
+	lower := strings.ToLower(s)
+
+	// on-time or 0
+	if lower == "on-time" || lower == "0" {
+		return "TRIGGER:PT0S", nil
+	}
+
+	// Pattern matching for Nm, Nh, Nd
+	if len(s) >= 2 {
+		n := s[:len(s)-1]
+		unit := s[len(s)-1]
+
+		num, err := strconv.Atoi(n)
+		if err == nil && num > 0 {
+			switch unit {
+			case 'm', 'M':
+				return fmt.Sprintf("TRIGGER:-PT%dM", num), nil
+			case 'h', 'H':
+				return fmt.Sprintf("TRIGGER:-PT%dH", num), nil
+			case 'd', 'D':
+				return fmt.Sprintf("TRIGGER:-P%dD", num), nil
+			}
+		}
+	}
+
+	// Known shortcuts
+	switch lower {
+	case "5m":
+		return "TRIGGER:-PT5M", nil
+	case "10m":
+		return "TRIGGER:-PT10M", nil
+	case "15m":
+		return "TRIGGER:-PT15M", nil
+	case "30m":
+		return "TRIGGER:-PT30M", nil
+	case "45m":
+		return "TRIGGER:-PT45M", nil
+	case "1h":
+		return "TRIGGER:-PT1H", nil
+	case "2h":
+		return "TRIGGER:-PT2H", nil
+	case "3h":
+		return "TRIGGER:-PT3H", nil
+	case "6h":
+		return "TRIGGER:-PT6H", nil
+	case "12h":
+		return "TRIGGER:-PT12H", nil
+	case "1d":
+		return "TRIGGER:-P1D", nil
+	case "2d":
+		return "TRIGGER:-P2D", nil
+	case "3d":
+		return "TRIGGER:-P3D", nil
+	case "1w":
+		return "TRIGGER:-P1W", nil
+	}
+
+	return "", fmt.Errorf("unknown reminder format: %s", s)
+}
+
+// ReminderToHuman converts TRIGGER format to human-readable string
+func ReminderToHuman(trigger string) string {
+	if trigger == "" {
+		return ""
+	}
+
+	// Remove TRIGGER: prefix
+	if strings.HasPrefix(trigger, "TRIGGER:") {
+		trigger = trigger[8:]
+	}
+
+	// PT0S = at due time
+	if trigger == "PT0S" {
+		return "at due time"
+	}
+
+	// Negative duration (before due)
+	if strings.HasPrefix(trigger, "-") {
+		trigger = trigger[1:]
+
+		// Parse duration
+		if strings.HasPrefix(trigger, "PT") {
+			// Time duration: PT1H, PT30M, etc.
+			duration := trigger[2:]
+			switch duration {
+			case "5M":
+				return "5 min before"
+			case "10M":
+				return "10 min before"
+			case "15M":
+				return "15 min before"
+			case "30M":
+				return "30 min before"
+			case "45M":
+				return "45 min before"
+			case "1H":
+				return "1 hour before"
+			case "2H":
+				return "2 hours before"
+			case "3H":
+				return "3 hours before"
+			case "6H":
+				return "6 hours before"
+			case "12H":
+				return "12 hours before"
+			}
+			// Dynamic parse Nm
+			if len(duration) >= 2 && duration[len(duration)-1] == 'M' {
+				if n, err := strconv.Atoi(duration[:len(duration)-1]); err == nil {
+					return fmt.Sprintf("%d min before", n)
+				}
+			}
+			if len(duration) >= 2 && duration[len(duration)-1] == 'H' {
+				if n, err := strconv.Atoi(duration[:len(duration)-1]); err == nil {
+					return fmt.Sprintf("%d hour%s before", n, plural(n))
+				}
+			}
+		} else if strings.HasPrefix(trigger, "P") {
+			// Date duration: P1D, P2D, etc.
+			duration := trigger[1:]
+			switch duration {
+			case "1D":
+				return "1 day before"
+			case "2D":
+				return "2 days before"
+			case "3D":
+				return "3 days before"
+			case "1W":
+				return "1 week before"
+			}
+			if len(duration) >= 2 && duration[len(duration)-1] == 'D' {
+				if n, err := strconv.Atoi(duration[:len(duration)-1]); err == nil {
+					return fmt.Sprintf("%d days before", n)
+				}
+			}
+			if len(duration) >= 2 && duration[len(duration)-1] == 'W' {
+				if n, err := strconv.Atoi(duration[:len(duration)-1]); err == nil {
+					return fmt.Sprintf("%d week%s before", n, plural(n))
+				}
+			}
+		}
+	}
+
+	return trigger
+}
+
+func plural(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
 }
 
 // ParseDueDate parses a due date string to TickTick format
