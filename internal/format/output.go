@@ -70,7 +70,13 @@ func OutputTaskList(tasks []api.Task, client *api.Client) error {
 			checklistBadge = fmt.Sprintf(" [%d/%d]", completed, len(t.Items))
 		}
 
-		fmt.Printf("%s %s  %-30s → %-15s due: %s%s%s%s\n",
+		// Format progress badge for checklist tasks with non-zero progress
+		progressBadge := ""
+		if t.Progress > 0 && (t.Kind == "CHECKLIST" || len(t.Items) > 0) {
+			progressBadge = fmt.Sprintf(" [%d%%]", t.Progress)
+		}
+
+		fmt.Printf("%s %s  %-30s → %-15s due: %s%s%s%s%s\n",
 			statusPrefix,
 			priorityStr,
 			truncate(t.Title, 30),
@@ -78,7 +84,8 @@ func OutputTaskList(tasks []api.Task, client *api.Client) error {
 			dueStr,
 			reminderIndicator,
 			repeatIndicator,
-			checklistBadge)
+			checklistBadge,
+			progressBadge)
 	}
 	fmt.Println()
 
@@ -125,6 +132,11 @@ func OutputTaskDetail(task *api.Task, projectID string, client *api.Client) erro
 	}
 
 	fmt.Println("│ Status:   " + status)
+
+	// Show progress bar for checklist tasks or tasks with progress > 0
+	if task.Progress > 0 && (task.Kind == "CHECKLIST" || len(task.Items) > 0) {
+		fmt.Println("│ Progress: " + renderProgressBar(task.Progress))
+	}
 
 	if task.Content != "" {
 		fmt.Println("│ Notes:    " + task.Content)
@@ -182,4 +194,21 @@ func formatDueDateFull(due string) string {
 		return due
 	}
 	return tm.Format("Mon, Jan 2, 2006 at 3:04 PM")
+}
+
+// renderProgressBar renders a progress bar with 10 blocks
+// filled = █, empty = ░
+func renderProgressBar(progress int) string {
+	if progress < 0 {
+		progress = 0
+	}
+	if progress > 100 {
+		progress = 100
+	}
+
+	filled := progress / 10
+	empty := 10 - filled
+
+	bar := strings.Repeat("█", filled) + strings.Repeat("░", empty)
+	return fmt.Sprintf("[%s] %d%%", bar, progress)
 }

@@ -39,6 +39,7 @@ type Task struct {
 	Reminders      []Reminder      `json:"reminders,omitempty"`
 	Items          []ChecklistItem `json:"items,omitempty"`
 	Kind           string          `json:"kind,omitempty"`
+	Progress       int             `json:"progress,omitempty"` // 0-100 for checklist tasks
 }
 
 type Reminder struct {
