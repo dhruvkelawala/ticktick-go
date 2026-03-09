@@ -25,6 +25,7 @@ Add tasks, manage checklists, set reminders, search, and check off your day with
 - 🏷️ **Tags** — add tags to tasks, filter by tag, list all tags
 - 🗓️ **Natural language dates** — `tomorrow 3pm`, `next monday`, `in 2 days`
 - 🔺 **Priority** — `low`, `medium`, `high` with shorthand flags (`--high`, `--med`, `--low`)
+- 📊 **Progress display** — visual progress bars for checklist tasks (0–100%)
 - ⚡ **Quick-add shorthands** — `--today`, `--tomorrow`/`--tmrw` for fast capture
 - 📤 **JSON output** — pipe any list into `jq` for scripting
 - 🔐 **OAuth2 auth** — secure login via TickTick Open API
@@ -134,6 +135,12 @@ ttg task item-delete <task-id> <item-id>   # Delete an item
 
 # Convert existing task to checklist
 ttg task edit <id> --kind checklist
+```
+
+Checklist tasks show a visual progress bar in list and detail views:
+```
+☑️ Pack for trip [60%]
+│ Progress: [██████░░░░] 60%
 ```
 
 ### Projects
